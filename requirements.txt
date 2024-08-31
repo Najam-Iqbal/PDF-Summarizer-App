@@ -13,3 +13,4 @@ opencv-python
 Pillow
 opencv-python-headless
 tesseract-ocr
+pyocr
