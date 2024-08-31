@@ -1,0 +1,4 @@
+build:
+  buildpacks:
+    - heroku/python
+    - heroku-community/apt
