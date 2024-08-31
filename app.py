@@ -1,6 +1,6 @@
 import streamlit as st
 import fitz  # PyMuPDF
-import pytesseract
+import easyocr
 from pdf2image import convert_from_path
 import camelot
 import io
@@ -8,8 +8,9 @@ from PIL import Image
 from groq import Groq
 from fpdf import FPDF
 import os
-os.environ['TESSDATA_PREFIX'] = '/usr/share/tessdata'
-import pytesseract
+
+# Initialize EasyOCR reader
+ocr_reader = easyocr.Reader(['en'])
 
 # Initialize Groq API
 GROQ_API_KEY = st.secrets.key.G_api
@@ -32,9 +33,13 @@ def extract_text_from_pdf(pdf_path):
             image_bytes = base_image["image"]
             image_ext = base_image["ext"]
             image = Image.open(io.BytesIO(image_bytes))
-            ocr_text = pytesseract.image_to_string(image)
+            
+            # Performing OCR on the image using EasyOCR
+            ocr_results = ocr_reader.readtext(image)
+            ocr_text = " ".join([result[1] for result in ocr_results])
             extracted_text += ocr_text
 
+        # Extracting tables using Camelot
         pdf_file = convert_from_path(pdf_path)
         for i, img in enumerate(pdf_file):
             img.save(f'page_{i}.jpg', 'JPEG')
