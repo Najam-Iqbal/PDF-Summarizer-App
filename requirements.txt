@@ -12,6 +12,3 @@ camelot-py[cv]
 opencv-python
 Pillow
 opencv-python-headless
-streamlit==1.20.0; extra_pip_install_args==--prefix /usr/local
-pytesseract
-
