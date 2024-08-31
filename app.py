@@ -1,5 +1,5 @@
 import streamlit as st
-import fitz  # PyMuPDF
+import fitz  # PyMuPDF
 import easyocr
 from pdf2image import convert_from_path
 import camelot
@@ -7,18 +7,17 @@ import io
 from PIL import Image
 from groq import Groq
 from fpdf import FPDF
-import os
 
 # Initialize EasyOCR reader
 ocr_reader = easyocr.Reader(['en'])
 
-# Initialize Groq API
+# Initialize Groq API (if needed, update with your API key getter)
 GROQ_API_KEY = st.secrets.key.G_api
-client = Groq(api_key=GROQ_API_KEY)
+client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
 
 # Function to extract text from PDF
-def extract_text_from_pdf(pdf_path):
-    doc = fitz.open(pdf_path)
+def extract_text_from_pdf(pdf_data):
+    doc = fitz.open(io.BytesIO(pdf_data))
     extracted_text = ""
 
     for page_num in range(min(doc.page_count, 50)):  # Limit to 50 pages
@@ -40,28 +39,31 @@ def extract_text_from_pdf(pdf_path):
             extracted_text += ocr_text
 
         # Extracting tables using Camelot
-        pdf_file = convert_from_path(pdf_path)
+        pdf_file = convert_from_path(io.BytesIO(pdf_data))
         for i, img in enumerate(pdf_file):
             img.save(f'page_{i}.jpg', 'JPEG')
-            tables = camelot.read_pdf(pdf_path, pages=str(page_num + 1))
-            for table in tables:
-                extracted_text += table.df.to_string()
+        tables = camelot.read_pdf(io.BytesIO(pdf_data), pages=str(page_num + 1))
+        for table in tables:
+            extracted_text += table.df.to_string()
 
     return extracted_text
 
-# Function to summarize text using Groq API
+# Function to summarize text using Groq API (if available)
 def summarize_text(text, model="llama-3.1-70b-versatile"):
-    chat_completion = client.chat.completions.create(
-        messages=[{"role": "user", "content": "Summarize this page in 15-20 lines under the heading of summary. You have to summarize, even if there are different, unlike topics on that page. (Kindly provide the response in proper paragraphing). However, if there is no text, then print Nothing to summarize. Additionally, after summarizing the text, enlist difficult terms up to 15, along with their single line meaning." + text}],
-        model=model,
-    )
-    return chat_completion.choices[0].message.content
+    if client:
+        chat_completion = client.chat.completions.create(
+            messages=[{"role": "user", "content": "Summarize this page in 15-20 lines under the heading of summary. You have to summarize, even if there are different, unlike topics on that page. (Kindly provide the response in proper paragraphing). However, if there no text, then print Nothing to summarize. Additionally, after summarizing the text, enlist difficult terms up to 15, along with their single line meaning." + text}],
+            model=model,
+        )
+        return chat_completion.choices[0].message.content
+    else:
+        return "Groq API not configured. Text summarization unavailable."
 
 # Function to generate PDF
 def generate_pdf(summaries):
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
-    
+  
     for i, summary in enumerate(summaries):
         pdf.add_page()
         pdf.set_font("Arial", size=12)
@@ -78,32 +80,27 @@ st.write("Upload a PDF file (up to 50 pages) to summarize its content.")
 uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
 
 if uploaded_file is not None:
-    with open("uploaded_file.pdf", "wb") as f:
-        f.write(uploaded_file.getbuffer())
-    
-    st.write("Processing the PDF file...")
-
     # Extract text from PDF
-    text = extract_text_from_pdf("uploaded_file.pdf")
-    
+    text = extract_text_from_pdf(uploaded_file.read())
+
     st.write("Extracting and summarizing text from each page...")
-    
+
     summaries = []
-    total_pages = min(fitz.open("uploaded_file.pdf").page_count, 50)
-    
+    total_pages = len(text.split('\n\nPage ')) - 1  # Calculate total pages based on extracted text
+
     progress_bar = st.progress(0)
-    
+
     for i, page_text in enumerate(text.split('\n\nPage ')[1:], start=1):
         st.write(f"Processing page {i} of {total_pages}...")
         summary = summarize_text(page_text)
         summaries.append(summary)
         progress_bar.progress(i / total_pages)
-    
+
     # Generate PDF with summaries
     summarized_pdf_path = generate_pdf(summaries)
-    
+
     # Provide download link for the summarized PDF
     with open(summarized_pdf_path, "rb") as f:
         st.download_button("Download Summarized PDF", f, file_name="summarized_output.pdf")
-    
+
     st.success("PDF summarization complete!")
