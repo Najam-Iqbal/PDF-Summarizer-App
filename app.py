@@ -8,6 +8,8 @@ from PIL import Image
 from groq import Groq
 from fpdf import FPDF
 import os
+os.environ['TESSDATA_PREFIX'] = '/usr/share/tessdata'
+import pytesseract
 
 # Initialize Groq API
 GROQ_API_KEY = st.secrets.key.G_api
