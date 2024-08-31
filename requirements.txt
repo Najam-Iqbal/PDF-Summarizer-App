@@ -11,3 +11,4 @@ pdf2image
 camelot-py[cv]
 opencv-python
 Pillow
+cv2
