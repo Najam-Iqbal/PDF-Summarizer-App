@@ -1,4 +1,4 @@
---upgrade pip
+pip install --upgrade pip
 PyMuPDF==1.20.2
 PyPDF2==3.0.1
 reportlab==3.6.12
