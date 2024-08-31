@@ -1,3 +1,4 @@
+easyocr
 PyMuPDF
 PyPDF2
 reportlab
@@ -6,11 +7,7 @@ groq
 streamlit
 FPDF
 requests
-pytesseract
 pdf2image
 camelot-py[cv]
 opencv-python
 Pillow
-opencv-python-headless
-pyocr
-easyocr
