@@ -1,5 +1,5 @@
 import streamlit as st
-import fitz  # PyMuPDF
+import fitz  
 import easyocr
 from pdf2image import convert_from_path
 import camelot
